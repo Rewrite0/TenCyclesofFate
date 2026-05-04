@@ -262,6 +262,7 @@ async def _generate_image_impl(scene_prompt: str) -> str | None:
 - 背景层次丰富，融合东方仙侠元素与现代审美
 - 整体画面要有"氪金手游"级别的精美感和视觉冲击力
 - 忠实反映场景中人物的状态、动作和情绪
+- 只生成当前叙事场景本身，不要生成游戏UI、菜单、按钮、文字说明、对话框、待选选项或任何选项编号/选项文字
 </requirements>
 
 <protagonist_design>

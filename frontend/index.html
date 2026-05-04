@@ -25,6 +25,7 @@
 </head>
 
 <body>
+    <img id="scene-background-image" alt="" aria-hidden="true">
     <div id="app-container">
         <!-- Login View -->
         <div id="login-view" class="view active">
@@ -40,14 +41,18 @@
                 <h1>浮生一梦</h1>
                 <div id="game-status">
                     <span>剩余机缘: <span id="opportunities">10</span></span>
-                    <button id="fullscreen-button" class="header-button" title="全屏模式">⛶</button>
+                    <button id="status-toggle-button" class="header-button" type="button" aria-controls="status-panel" aria-expanded="true">收起状态</button>
                     <button id="logout-button" class="header-button">登出</button>
                 </div>
             </header>
 
             <aside id="status-panel">
                 <!-- Character status will be rendered here -->
-                <p>【人物业力】</p>
+                <div class="status-panel-header">
+                    <p>【人物业力】</p>
+                    <button id="status-close-button" class="header-button" type="button" aria-controls="status-panel">收起</button>
+                </div>
+                <button id="status-rail-button" type="button" aria-controls="status-panel" aria-label="展开人物业力">人物业力</button>
                 <div id="character-status"></div>
             </aside>
 

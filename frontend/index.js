@@ -22,7 +22,10 @@ const DOMElements = {
     gameView: document.getElementById('game-view'),
     loginError: document.getElementById('login-error'),
     logoutButton: document.getElementById('logout-button'),
-    fullscreenButton: document.getElementById('fullscreen-button'),
+    sceneBackgroundImage: document.getElementById('scene-background-image'),
+    statusToggleButton: document.getElementById('status-toggle-button'),
+    statusCloseButton: document.getElementById('status-close-button'),
+    statusRailButton: document.getElementById('status-rail-button'),
     narrativeWindow: document.getElementById('narrative-window'),
     characterStatus: document.getElementById('character-status'),
     opportunitiesSpan: document.getElementById('opportunities'),
@@ -281,6 +284,7 @@ function render() {
     });
     DOMElements.narrativeWindow.innerHTML = '';
     DOMElements.narrativeWindow.appendChild(historyContainer);
+    scheduleSceneBackgroundUpdate();
     
     // 首次渲染直接跳到底部，之后使用平滑滚动
     if (scrollState.isFirstRender) {
@@ -309,6 +313,33 @@ function render() {
         }
         startButton.disabled = appState.gameState.is_processing;
     }
+}
+
+function scheduleSceneBackgroundUpdate() {
+    requestAnimationFrame(updateSceneBackground);
+}
+
+function updateSceneBackground() {
+    const images = DOMElements.narrativeWindow.querySelectorAll('img[src]');
+    const latestImage = Array.from(images).reverse().find(img => img.complete && img.naturalWidth > 0);
+
+    if (!latestImage) {
+        images.forEach(img => {
+            img.addEventListener('load', scheduleSceneBackgroundUpdate, { once: true });
+            img.addEventListener('error', scheduleSceneBackgroundUpdate, { once: true });
+        });
+        if (!images.length) {
+            document.body.classList.remove('has-scene-background');
+            DOMElements.sceneBackgroundImage.removeAttribute('src');
+        }
+        return;
+    }
+
+    const imageUrl = latestImage.currentSrc || latestImage.src;
+    if (DOMElements.sceneBackgroundImage.src !== imageUrl) {
+        DOMElements.sceneBackgroundImage.src = imageUrl;
+    }
+    document.body.classList.add('has-scene-background');
 }
 
 function renderValue(container, value, level = 0) {
@@ -385,18 +416,20 @@ function renderRollEvent(rollEvent) {
     setTimeout(() => DOMElements.rollOverlay.classList.add('hidden'), 3000);
 }
 
-// --- Fullscreen Management ---
-function toggleFullscreen() {
-    document.body.classList.toggle('app-fullscreen');
-    updateFullscreenButton();
+// --- Status Panel Management ---
+function setStatusPanelCollapsed(isCollapsed) {
+    DOMElements.gameView.classList.toggle('status-collapsed', isCollapsed);
+    DOMElements.statusToggleButton.textContent = isCollapsed ? '展开状态' : '收起状态';
+    DOMElements.statusToggleButton.setAttribute('aria-expanded', String(!isCollapsed));
+    DOMElements.statusRailButton.setAttribute('aria-expanded', String(!isCollapsed));
 }
 
-function updateFullscreenButton() {
-    const isFullscreen = document.body.classList.contains('app-fullscreen');
-    if (DOMElements.fullscreenButton) {
-        DOMElements.fullscreenButton.textContent = isFullscreen ? '⛶' : '⛶';
-        DOMElements.fullscreenButton.title = isFullscreen ? '退出全屏' : '全屏模式';
-    }
+function toggleStatusPanel() {
+    setStatusPanelCollapsed(!DOMElements.gameView.classList.contains('status-collapsed'));
+}
+
+function initializeStatusPanelLayout() {
+    setStatusPanelCollapsed(window.matchMedia('(max-width: 850px)').matches);
 }
 
 // --- Event Handlers ---
@@ -444,6 +477,8 @@ async function initializeGame() {
 }
 
 function init() {
+    initializeStatusPanelLayout();
+
     // Always try to initialize the game on page load.
     // If the user is logged in, it will show the game view.
     // If not, the catch block in initializeGame will handle showing the login view.
@@ -454,7 +489,9 @@ function init() {
 
     // Setup event listeners regardless of initial view
     DOMElements.logoutButton.addEventListener('click', handleLogout);
-    DOMElements.fullscreenButton.addEventListener('click', toggleFullscreen);
+    DOMElements.statusToggleButton.addEventListener('click', toggleStatusPanel);
+    DOMElements.statusCloseButton.addEventListener('click', () => setStatusPanelCollapsed(true));
+    DOMElements.statusRailButton.addEventListener('click', () => setStatusPanelCollapsed(false));
     DOMElements.actionButton.addEventListener('click', () => handleAction());
     DOMElements.actionInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleAction(); });
     DOMElements.startTrialButton.addEventListener('click', () => handleAction("开始试炼"));

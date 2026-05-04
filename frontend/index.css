@@ -30,7 +30,7 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    padding: 2rem;
+    padding: 0;
     box-sizing: border-box;
     position: relative;
 }
@@ -44,23 +44,40 @@ body::after {
     height: 100%;
     background: radial-gradient(circle at 15% 85%, rgba(106, 139, 106, 0.1), transparent 40%);
     pointer-events: none;
-    z-index: -1;
+    z-index: 0;
+}
+
+#scene-background-image {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+    z-index: 2;
+}
+
+body.has-scene-background #scene-background-image {
+    opacity: 0.2;
 }
 
 
 /* --- Main Container as a Wooden Frame --- */
 #app-container {
     width: 100%;
-    max-width: 1000px;
-    height: 90vh;
-    max-height: 800px;
-    background: rgba(45, 30, 20, 0.5);
+    max-width: none;
+    height: 100vh;
+    max-height: none;
+    background: rgba(45, 30, 20, 0.38);
     display: flex;
     flex-direction: column;
     overflow: hidden;
     position: relative;
-    border-radius: 8px;
-    border: 8px solid #5a4a3a;
+    z-index: 1;
+    border-radius: 0;
+    border: none;
     box-shadow: 
         inset 0 0 0 2px #3d2c1d,
         0 10px 40px var(--shadow-color);
@@ -166,7 +183,7 @@ body::after {
 #game-view {
     padding: 0;
     display: grid;
-    grid-template-columns: 240px 1fr;
+    grid-template-columns: minmax(240px, 28vw) minmax(0, 1fr);
     grid-template-rows: auto 1fr auto;
     grid-template-areas:
         "header header"
@@ -176,9 +193,20 @@ body::after {
     background-color: #5a4a3a;
 }
 
+#game-view.status-collapsed {
+    grid-template-columns: 48px 1fr;
+}
+
 #game-header, #status-panel, #main-content, #action-area {
     background: var(--panel-bg);
     padding: 1rem;
+}
+
+body.has-scene-background #game-header,
+body.has-scene-background #status-panel,
+body.has-scene-background #main-content,
+body.has-scene-background #action-area {
+    background: rgba(245, 247, 246, 0.86);
 }
 
 #game-header {
@@ -213,22 +241,12 @@ body::after {
     color: var(--accent-color);
 }
 
-#fullscreen-button {
-    font-size: 1.1rem;
-    padding: 0.3rem 0.6rem;
-}
-
-/* App Fullscreen Mode */
-body.app-fullscreen {
-    padding: 0;
-}
-
-body.app-fullscreen #app-container {
-    max-width: none;
-    max-height: none;
-    height: 100vh;
-    border-radius: 0;
-    border: none;
+#game-status {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
 }
 
 #status-panel {
@@ -236,8 +254,18 @@ body.app-fullscreen #app-container {
     padding: 1.5rem;
     overflow-y: auto;
     border-right: 2px solid #5a4a3a;
+    position: relative;
+    transition: padding 0.25s ease;
 }
-#status-panel p {
+
+.status-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.status-panel-header p {
     font-family: var(--font-sans);
     font-weight: bold;
     color: var(--title-color);
@@ -245,7 +273,51 @@ body.app-fullscreen #app-container {
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 0.5rem;
     margin-top: 0;
+    margin-bottom: 1rem;
+    flex: 1;
 }
+
+#status-close-button {
+    flex-shrink: 0;
+}
+
+#status-rail-button {
+    display: none;
+    width: 100%;
+    height: 100%;
+    min-height: 10rem;
+    border: none;
+    background: transparent;
+    color: var(--title-color);
+    cursor: pointer;
+    font-family: var(--font-sans);
+    font-weight: bold;
+    writing-mode: vertical-rl;
+    letter-spacing: 0;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 0;
+}
+
+#status-rail-button:hover {
+    color: var(--accent-color);
+    background: rgba(0,0,0,0.04);
+}
+
+#game-view.status-collapsed #status-panel {
+    padding: 0;
+    overflow: hidden;
+}
+
+#game-view.status-collapsed .status-panel-header,
+#game-view.status-collapsed #character-status {
+    display: none;
+}
+
+#game-view.status-collapsed #status-rail-button {
+    display: flex;
+}
+
 #character-status {
     font-size: 0.95rem;
     line-height: 1.8;
@@ -303,10 +375,16 @@ body.app-fullscreen #app-container {
 
 #narrative-window {
     flex-grow: 1;
-    padding: 2rem;
+    padding: 2.4rem clamp(1.2rem, 4vw, 4.5rem);
     overflow-y: auto;
     line-height: 2;
     font-size: 1.1rem;
+}
+
+#narrative-window > div {
+    max-width: 880px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 /* Narrative content styling */
@@ -506,19 +584,54 @@ body.app-fullscreen #app-container {
     }
     #game-view {
         grid-template-columns: 1fr;
-        grid-template-rows: auto auto 1fr auto;
+        grid-template-rows: auto 1fr auto;
         grid-template-areas:
             "header"
-            "status"
             "main"
             "action";
+        position: relative;
     }
+
+    #game-view.status-collapsed {
+        grid-template-columns: 1fr;
+    }
+
+    #game-header {
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    #game-header h1 {
+        font-size: 1.45rem;
+    }
+
     #status-panel {
+        position: absolute;
+        inset: 0;
+        z-index: 900;
         border-right: none;
-        border-bottom: 2px solid #5a4a3a;
-        max-height: 150px;
-        padding: 0.5rem 1rem;
+        border-bottom: none;
+        padding: 1rem;
+        max-height: none;
+        transform: translateX(0);
+        transition: transform 0.25s ease;
+        box-shadow: 0 12px 32px rgba(0,0,0,0.35);
     }
+
+    #game-view.status-collapsed #status-panel {
+        padding: 0;
+        transform: translateX(-100%);
+        pointer-events: none;
+    }
+
+    #game-view.status-collapsed #status-rail-button {
+        display: none;
+    }
+
+    #status-close-button {
+        display: inline-block;
+    }
+
     #narrative-window { padding: 1rem; }
     .action-input-row { flex-direction: column; gap: 0.5rem; }
     #action-button { width: 100%; }
