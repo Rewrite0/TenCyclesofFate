@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     # Default: at most 10 images per 10 minutes.
     IMAGE_GEN_GLOBAL_LIMIT: int = 10
     IMAGE_GEN_GLOBAL_WINDOW_SECONDS: int = 10 * 60
+    GENERATED_IMAGE_DIR: str = "game_data/generated_images"
+    GENERATED_IMAGE_URL_PREFIX: str = "/generated-images"
+    GENERATED_IMAGE_RETENTION_SECONDS: int = 2 * 24 * 60 * 60
+    GENERATED_IMAGE_CLEANUP_INTERVAL_SECONDS: int = 60 * 60
 
     # JWT Settings for OAuth2
     SECRET_KEY: str

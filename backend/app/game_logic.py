@@ -10,7 +10,7 @@ from datetime import date
 from pathlib import Path
 from fastapi import HTTPException, status
 
-from . import state_manager, openai_client, cheat_check, redemption
+from . import state_manager, openai_client, cheat_check, redemption, image_store
 from .websocket_manager import manager as websocket_manager
 from .config import settings
 
@@ -120,6 +120,7 @@ async def _delayed_image_generation(player_id: str, trigger_time: float):
         image_data_url = await openai_client.generate_image(scene_prompt, user_id=player_id)
         
         if image_data_url:
+            image_url = await image_store.store_generated_image(image_data_url, player_id=player_id)
             # 重新获取最新的 session（可能在生成期间有变化）
             session = await state_manager.get_session(player_id)
             if not session:
@@ -131,7 +132,7 @@ async def _delayed_image_generation(player_id: str, trigger_time: float):
                 return
             
             # 构建图片 markdown
-            image_markdown = f"\n\n![场景插画]({image_data_url})\n"
+            image_markdown = f"\n\n![场景插画]({image_url})\n"
             
             # 插入到 display_history 末尾
             session["display_history"].append(image_markdown)

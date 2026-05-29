@@ -14,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from pydantic import BaseModel
 
-from . import auth, game_logic, state_manager, security
+from . import auth, game_logic, state_manager, security, image_store
 from .websocket_manager import manager as websocket_manager
 from .live_system import live_manager
 from .config import settings
@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     logging.info("Application startup...")
     await state_manager.init_storage()
+    await image_store.init_image_store()
     state_manager.start_auto_save_task()
     yield
     logging.info("Application shutdown...")
@@ -208,6 +209,8 @@ async def live_websocket_endpoint(websocket: WebSocket):
 app.include_router(api_router)
 app.include_router(root_router) # Include the root router before mounting static files
 static_files_dir = Path(__file__).parent.parent.parent / "frontend"
+generated_images_dir = image_store.get_image_dir()
+generated_images_dir.mkdir(parents=True, exist_ok=True)
 
 # --- 404 Exception Handler ---
 @app.exception_handler(404)
@@ -215,6 +218,11 @@ async def not_found_handler(request: Request, exc: HTTPException):
     """Redirect all 404 errors to the root page."""
     return RedirectResponse(url="/")
 
+app.mount(
+    image_store.get_image_url_prefix(),
+    StaticFiles(directory=generated_images_dir),
+    name="generated-images",
+)
 app.mount("/", StaticFiles(directory=static_files_dir, html=True), name="static")
 
 # --- Uvicorn Runner ---
